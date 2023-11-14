@@ -1,5 +1,7 @@
 #pragma once
-#include "hitpointtypes.h"
+#include <cstdint>
+
+typedef std::uint16_t hptype;
 
 class hp {
 public:
@@ -41,6 +43,15 @@ public:
             return;
         }
         CurrentHP += heal;
+    }
+
+    hp(){CurrentHP = 1; MaxHP = 1;}
+    hp(hptype cHP, hptype mHP)
+    {
+        CurrentHP = cHP;
+        MaxHP = mHP;
+        if (CurrentHP > MaxHP)
+            CurrentHP = MaxHP;
     }
 
 private:
