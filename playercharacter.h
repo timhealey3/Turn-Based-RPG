@@ -58,6 +58,17 @@ protected:
     }
 };
 
+#define PCCONSTRUCT : PlayerCharacterDelegate(){\
+HP->setMax(BASEHP);\
+HP->increaseCurrent(BASEHP);\
+increaseStats(BASESTR, BASEINT);\
+}
+
+#define LEVELUP void LevelUp() override{\
+HP->setMax((wellType)((BASEHP/2.f) + HP->getMax()));\
+increaseStats((stattype)((BASESTR+1u)/2.f), (stattype)((BASEINT+1u)/2.f));\
+}
+
 class Cleric : public PlayerCharacterDelegate
 {
 public:
@@ -65,19 +76,50 @@ public:
     static const stattype BASESTR = (stattype)2u;
     static const stattype BASEINT = (stattype)3u;
     
-    Cleric() : PlayerCharacterDelegate(){
-        HP->setMax(BASEHP);
-        HP->increaseCurrent(BASEHP);
-        increaseStats(BASESTR, BASEINT);
-    }
+    Cleric()PCCONSTRUCT
     std::string getClassName() override {return std::string("cleric");}
 private:
-    void LevelUp() override{
-        HP->setMax((wellType)((BASEHP/2.f) + HP->getMax()));
-        increaseStats((stattype)((BASESTR+1u)/2.f), (stattype)((BASEINT+1u)/2.f));
-    }
+    LEVELUP
 };
 
+class Hobbit : public PlayerCharacterDelegate
+{
+public:
+    static const wellType BASEHP = (wellType)12u;
+    static const stattype BASESTR = (stattype)3u;
+    static const stattype BASEINT = (stattype)2u;
+    
+    Hobbit()PCCONSTRUCT
+    std::string getClassName() override {return std::string("cleric");}
+private:
+    LEVELUP
+};
+
+class Warrior : public PlayerCharacterDelegate
+{
+public:
+    static const wellType BASEHP = (wellType)18u;
+    static const stattype BASESTR = (stattype)4u;
+    static const stattype BASEINT = (stattype)1u;
+    
+    Warrior()PCCONSTRUCT
+    std::string getClassName() override {return std::string("cleric");}
+private:
+    LEVELUP
+};
+
+class Wizard : public PlayerCharacterDelegate
+{
+public:
+    static const wellType BASEHP = (wellType)10u;
+    static const stattype BASESTR = (stattype)1u;
+    static const stattype BASEINT = (stattype)4u;
+    
+    Wizard()PCCONSTRUCT
+    std::string getClassName() override {return std::string("cleric");}
+private:
+    LEVELUP
+};
 
 class PlayerCharacter {
 private:
@@ -85,5 +127,18 @@ private:
 public:
     PlayerCharacter() = delete;
     PlayerCharacter(PlayerCharacterDelegate* pc) : pcclass(pc){}
-    std::string getClassName(){pcclass->getClassName();}
+    ~PlayerCharacter() {delete pcclass; pcclass = nullptr;}
+    
+    std::string getClassName(){return pcclass->getClassName();}
+    leveltype getLevel() {return pcclass->getLevel(); }
+    exptype getCurrentEXP() {return pcclass->getCurrentEXP();}
+    exptype getEXPNextLevel() {return pcclass->getEXPToNextLevel();}
+    wellType getMaxHP() {return pcclass->HP->getMax();}
+    stattype getStrength() {return pcclass->getStrength();}
+    stattype getIntellect() {return pcclass->getIntellect();}
+
+    void gainEXP(exptype amt) {pcclass -> gainEXP(amt);}
+    void takeDamage(wellType amt) {pcclass->HP->reduceCurrent(amt);}
+    void heal(wellType amt) {pcclass->HP->increaseCurrent(amt);}
+
 };
