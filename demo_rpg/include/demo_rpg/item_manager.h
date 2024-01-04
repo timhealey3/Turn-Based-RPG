@@ -41,7 +41,7 @@ public:
   static bool Equip(Item* item_to_equip, PlayerCharacter* p_char);
 
   static bool Use(Item* item_to_use, PlayerCharacter* p_char);
-
+  
   static bool MoveToBackpack(Item* item_to_move, PlayerCharacter* p_char);
 
   static void DeleteItem(Item*& item_to_delete/*, std::vector<Item*>& pack_to_delete_from*/);

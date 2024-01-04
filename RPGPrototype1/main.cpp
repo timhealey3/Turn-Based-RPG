@@ -1,130 +1,374 @@
 #include "pch.h"
+#include "demo_rpg/random.h"
+#include "demo_rpg/item.h"
+#include "demo_rpg/item_manager.h"
 #include <iostream>
 
 Player* MainCharacter = nullptr;
-char the_map[12][13] =
-{ "xxxxxxxxxxxx",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "xxxxxxxxxxxx" };
+Fightable* CurrentMonster = nullptr;
+int monsters_defeated = 0;
 
-struct Player {
-	Player(PlayerCharacterDelegate* charClass) : us(charClass) {}
-	Player() = delete;
-	PlayerCharacter us;
-	int prev_xpos = 3;
-	int prev_ypos = 3;
-	int xpos = 3;
-	int ypos = 3;
-};
+void display_character_sheet() {
+    system("CLS");
+    std::cout
+        << "Your Character\n"
+        << "-----------------\n"
+        << "Hit Points: " << MainCharacter->us.GetCurrentHP() << "/" << MainCharacter->us.GetMaxHP() << '\n'
+        << "Armor: " << MainCharacter->us.GetTotalArmor() << "  Resistance: " << MainCharacter->us.GetTotalElementRes() << '\n'
+        << "STR: " << MainCharacter->us.GetTotalStrength() << " AGI: " << MainCharacter->us.GetTotalAgility() << " INT: " << MainCharacter->us.GetTotalIntellect() << '\n'
+        << "\n\nEquipped Gear\n";
+    if (MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)) {
+        std::string weapon_name = MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->Name;
+        std::cout << "MELEE: " << weapon_name << "d(" << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->MinDamage << '-' << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->MaxDamage << ")\n";
+    }
+    if (MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)) {
+        std::string weapon_name = MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)->Name;
+        std::cout << "RANGED: " << weapon_name << "d(" << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)->MinDamage << '-' << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)->MaxDamage << ")\n";
+    }
+    if (MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::HEAD)) {
+        std::string armor_name = MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::HEAD)->Name;
+        std::cout << "HEAD: " << armor_name << '\n';
+    }
+    if (MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::NECK)) {
+        std::string armor_name = MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::NECK)->Name;
+        std::cout << "NECK: " << armor_name << '\n';
+    }
+    if (MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::CHEST)) {
+        std::string armor_name = MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::CHEST)->Name;
+        std::cout << "CHEST: " << armor_name << '\n';
+    }
+    if (MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::HANDS)) {
+        std::string armor_name = MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::HANDS)->Name;
+        std::cout << "HANDS: " << armor_name << '\n';
+    }
+    if (MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::RING1)) {
+        std::string armor_name = MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::RING1)->Name;
+        std::cout << "RING1: " << armor_name << '\n';
+    }
+    if (MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::RING2)) {
+        std::string armor_name = MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::RING2)->Name;
+        std::cout << "RING2: " << armor_name << '\n';
+    }
+    if (MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::LEGS)) {
+        std::string armor_name = MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::LEGS)->Name;
+        std::cout << "LEGS: " << armor_name << '\n';
+    }
+    if (MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::FEET)) {
+        std::string armor_name = MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::FEET)->Name;
+        std::cout << "FEET: " << armor_name << '\n';
+    }
+
+    std::cin.ignore(100, '\n');
+    std::cout << "\n press enter to continue\n";
+    char c = getchar();
+}
+
+void open_inventory() {
+    bool done = false;
+    int selected_item_num = 0;
+    while (!done) {
+        // clear screen
+        system("CLS");
+        auto list_of_items = MainCharacter->us.GetBackpackList();
+        std::cout << "CURRENT INVENTORY \n" << "-------------------\n\n";
+        int items_in_backpack_count = 0;
+        for (const auto& item : list_of_items) {
+            if (selected_item_num == items_in_backpack_count)
+                std::cout << " > ";
+            else
+                std::cout << " ";
+            std::cout << item->GetData()->Name << "\n";
+            items_in_backpack_count++;
+        }
+        std::cin.ignore(100, '\n');
+        std::cout << "\n d = done w = up s = down u = equip/use\n";
+        char c = getchar();
+        switch (c) {
+        case 'd':
+            done = true;
+            break;
+        case 'w':
+            selected_item_num--;
+            if (selected_item_num < 0) selected_item_num = 0;
+            break;
+        case 's':
+            selected_item_num++;
+            if (selected_item_num > list_of_items.size() - 1) selected_item_num = list_of_items.size() - 1;
+            break;
+        case 'u':
+            if (list_of_items.empty())
+                continue;
+            if (ItemManager::IsItemPotion(list_of_items[selected_item_num]))
+                ItemManager::Use(list_of_items[selected_item_num], &MainCharacter->us);
+            else
+                ItemManager::Equip(list_of_items[selected_item_num], &MainCharacter->us);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+Item* drop_random_item(){
+    // 8 pieces of armor, 2 weapon types, healing potion
+    int drop_seed = Random::NTK(1, 100);
+
+    if (drop_seed < 6) {
+        std::string name;
+        CoreStats local_stats;
+        int magical_power = Random::NTK(0, 2);
+        switch (magical_power) {
+        case 0: name = "Leather Helmet";
+            local_stats = CoreStats(0, 0, 0, 1, 0);
+            break;
+        case 1: name = "Iron Helmet";
+            local_stats = CoreStats(1, 1, 1, 2, 1);
+            break;
+        case 2: name = "Magical Iron Helmet";
+            local_stats = CoreStats(2, 2, 2, 3, 2);
+            break;
+        default:
+            break;
+        }
+        return ItemManager::CreateArmor(name, local_stats, ARMORSLOT::HEAD);
+    }
+    else if (drop_seed < 12) {
+        return ItemManager::CreateArmor("Breastplate", CoreStats(0, 0, 0, 1, 0), ARMORSLOT::CHEST);
+    }
+    else if (drop_seed < 18) {
+        return ItemManager::CreateArmor("Leg Guards", CoreStats(0, 0, 0, 1, 0), ARMORSLOT::LEGS);
+    }
+    else if (drop_seed < 24) {
+        return ItemManager::CreateArmor("Gloves", CoreStats(0, 0, 0, 1, 0), ARMORSLOT::HANDS);
+    }
+    else if (drop_seed < 30) {
+        return ItemManager::CreateArmor("Boots", CoreStats(0, 0, 0, 1, 0), ARMORSLOT::FEET);
+    }
+    else if (drop_seed < 36) {
+        return ItemManager::CreateArmor("Ring1", CoreStats(1, 1, 1, 0, 0), ARMORSLOT::RING1);
+    }
+    else if (drop_seed < 42) {
+        return ItemManager::CreateArmor("Ring2", CoreStats(1, 1, 1, 0, 0), ARMORSLOT::RING2);
+    }
+    else if (drop_seed < 48) {
+        return ItemManager::CreateArmor("Neck Guard", CoreStats(0, 0, 0, 1, 1), ARMORSLOT::NECK);
+    }
+    else if (drop_seed < 54) {
+        return ItemManager::CreateWeapon("1H Sword", CoreStats(0, 0, 0, 0, 0), WEAPONSLOT::MELEE, 2, 3);
+    }
+    else if (drop_seed < 60) {
+        return ItemManager::CreateWeapon("Bow", CoreStats(0, 0, 0, 0, 0), WEAPONSLOT::RANGED, 2, 3);
+    }
+    else if (drop_seed < 91) {
+        // can more than one quantity of potions
+        return ItemManager::CreatePotion("Potion of Health", Random::NTK(2, 5), Random::NTK(1,2));
+    }
+    return nullptr;
+}
+
+void create_monster(Fightable* in_out, const Player* base_calc) {
+    if (!base_calc)
+        return;
+
+    if (in_out) {
+        delete in_out;
+        in_out = nullptr;
+    }
+
+    int lowest_hp = base_calc->us.GetLevel() * 2;
+    int max_hp = base_calc->us.GetLevel() * 8;
+
+    int lowest_dam = base_calc->us.GetLevel();
+    int max_dam = base_calc->us.GetLevel() * 2;
+
+    in_out = new Fightable(Random::NTK(lowest_hp, max_hp), lowest_dam, max_dam);
+
+
+    in_out->xpos = Random::NTK(1, 11);
+    in_out->ypos = Random::NTK(1, 11);
+
+    while (the_map[in_out->xpos][in_out->ypos] == 'P' || the_map[in_out->xpos][in_out->ypos] == 'x') {
+        in_out->xpos = Random::NTK(1, 11);
+        in_out->ypos = Random::NTK(1, 11);
+    }
+
+    the_map[in_out->xpos][in_out->ypos] = 'M';
+
+    CurrentMonster = in_out;
+}
+
+void enterfightsequence(Player& player1) {
+    if (!CurrentMonster) {
+        return;
+    }
+    while (player1.IsAlive() && CurrentMonster->IsAlive()) {
+        system("CLS");
+        // display fight interface
+        std::cout
+            << "  \n"
+            << "Player         vs       Orc\n"
+            << "hp: " << player1.us.GetCurrentHP() << '/' << player1.us.GetMaxHP() << "                  hp: " << CurrentMonster->monster.HP.GetCurrent() << '/' << CurrentMonster->monster.HP.GetMax() << '\n'
+            << "action(a:attack): ";
+        char action = '1';
+        while (action != 'a') {
+            action = getchar();
+        }
+        CurrentMonster->monster.HP.ReduceCurrent(player1.us.MeleeAttack());
+
+        if (CurrentMonster->IsAlive()) {
+            int damage_we_take = CurrentMonster->monster.Attack();
+            damage_we_take -= player1.us.GetTotalArmor();
+            if (damage_we_take < 1)
+                damage_we_take = 1;
+            player1.us.TakeDamage(CurrentMonster->monster.Attack());
+        }
+    }
+
+    if (player1.IsAlive()) {
+        // drop random item
+        Item* item_drop = drop_random_item();
+        player1.us.GainEXP(CurrentMonster->xpworth);
+        // create next monster
+        monsters_defeated++;
+        create_monster(CurrentMonster, &player1);
+        std::cout << "You defeated the Orc!\n";
+        if (item_drop) {
+            ItemManager::MoveToBackpack(item_drop, &player1.us);
+            std::cout << "item received " << item_drop->GetData()->Name << '\n';
+        }
+        std::cout << "xp gained: " << CurrentMonster->xpworth << '\n';
+    }
+    else {
+        std::cout << "You were slain by the Orc!\n";
+    }
+
+    std::cin.ignore(100, '\n');
+    std::cout << "\n Press Enter to Continue\n";
+    char a = getchar();
+
+}
 
 void moveplayeronmap(Player& player1) {
-	// if they haven't move, return and do nothing
-	if (player1.xpos == player1.prev_xpos && player1.ypos == player1.prev_ypos)
-		return;
+    // if they haven't move, return and do nothing
+    if (player1.xpos == player1.prev_xpos && player1.ypos == player1.prev_ypos)
+        return;
 
-	if (the_map[player1.xpos][player1.ypos] == 'M') {
-		//enterfightsequence(player1);
-	}
+    if (the_map[player1.xpos][player1.ypos] == 'M') {
+        enterfightsequence(player1);
+    }
 
-	// check that the player hasn't moved into a wall
-	if (the_map[player1.xpos][player1.ypos] != 'x') {
-		// draw the charater at new location
-		the_map[player1.xpos][player1.ypos] = 'P';
-		// make old location a black area
-		the_map[player1.prev_xpos][player1.prev_ypos] = ' ';
-		// update current location to be previous before next update
-		player1.prev_xpos = player1.xpos;
-		player1.prev_ypos = player1.ypos;
-	}
-	else {
-		// hit a wall, move back to prev location
-		player1.xpos = player1.prev_xpos;
-		player1.ypos = player1.prev_ypos;
-	}
+    // check that the player hasn't moved into a wall
+    if (the_map[player1.xpos][player1.ypos] != 'x') {
+        // draw the charater at new location
+        the_map[player1.xpos][player1.ypos] = 'P';
+        // make old location a black area
+        the_map[player1.prev_xpos][player1.prev_ypos] = ' ';
+        // update current location to be previous before next update
+        player1.prev_xpos = player1.xpos;
+        player1.prev_ypos = player1.ypos;
+    }
+    else {
+        // hit a wall, move back to prev location
+        player1.xpos = player1.prev_xpos;
+        player1.ypos = player1.prev_ypos;
+    }
 }
-
 
 void showmap() {
-	system("CLS");
-	for (int i = 0; i < 12; i++) {
-		for (int j = 0; j < 13; j++)
-		{
-			std::cout << the_map[i][j];
-		}
-		std::cout << "\n";
-	}
+    system("CLS");
+    for (int i = 0; i < 12; i++) {
+        for (int j = 0; j < 13; j++) {
+            std::cout << the_map[i][j];
+        }
+        std::cout << '\n';
+    }
 }
+
 int main(int argc, char** argv) {
 
-	bool running = true;
+    std::cout << "Choose a class: \n"
+        << "1 = Cleric    2 = Warrior\n"
+        << "3 = Rogue     4 = Wizard\n";
+    int choice = 0;
+    while (choice == 0) {
+        std::cin >> choice;
+        std::cout << "chose: " << choice << '\n';
+        if (choice < 1 || choice > 4)
+            choice = 0;
+    }
 
-	std::cout << "Choose a class: \n"
-		<< "1 = Cleric    2 = Warrior\n"
-		<< "3 = Rogue     4 = Wizard\n";
-	int choice = 0;
-	while (choice == 0) {
-		choice = getchar();
-		if (choice < 1 || choice > 4)
-			choice = 0;
-	}
-	switch (choice) {
-	case 1:
-	{
-		MainCharacter = new Player(new Cleric());
-	}
-	break;
-	case 2:
-	{
-		MainCharacter = new Player(new Warrior());
-	}
-	break;
-	case 3:
-	{
-		MainCharacter = new Player(new Rogue());
-	}
-	break;
-	case 4:
-	{
-		MainCharacter = new Player(new Wizard());
-	}
-	break;
-	default:
-		return -12;  // failed to make player character
-	}
-	the_map[MainCharacter->xpos][MainCharacter->ypos] = 'P';
-	showmap();
+    switch (choice) {
+    case 1:
+    {
+        MainCharacter = new Player(new Cleric());
+    }
+    break;
+    case 2:
+    {
+        MainCharacter = new Player(new Warrior());
+    }
+    break;
+    case 3:
+    {
+        MainCharacter = new Player(new Rogue());
+    }
+    break;
+    case 4:
+    {
+        MainCharacter = new Player(new Wizard());
+    }
+    break;
+    default:
+        return -12;  // failed to make player character
+    }
 
-	while (running) {
-		std::cout << "\nmove(wasd): ";
-		char c = getchar();
-		switch (c) {
-		case 'w':
-			MainCharacter->xpos--;
-			break;
-		case 's':
-			MainCharacter->xpos++;
-			break;
-		case 'a':
-			MainCharacter->ypos--;
-			break;
-		case 'd':
-			MainCharacter->ypos++;
-			break;
-		default:
-			break;
-		}
-		moveplayeronmap(*MainCharacter);
-		showmap();
-	}
-	return EXIT_SUCCESS;
+    create_monster(CurrentMonster, MainCharacter);
+
+    the_map[MainCharacter->xpos][MainCharacter->ypos] = 'P';
+    the_map[CurrentMonster->xpos][CurrentMonster->ypos] = 'M';
+
+    showmap();
+
+    for (;;) {
+        std::cout << "\nmove(wasd): inventory (i): stats (t): ";
+        char c = getchar();
+
+        switch (c) {
+        case 'w':
+            MainCharacter->xpos--;
+            break;
+        case 's':
+            MainCharacter->xpos++;
+            break;
+        case 'a':
+            MainCharacter->ypos--;
+            break;
+        case 'd':
+            MainCharacter->ypos++;
+            break;
+        case 'i':
+            open_inventory();
+            break;
+        case 't':
+            display_character_sheet();
+            break;
+        default:
+            break;
+        }
+
+        std::cin.clear();
+
+        moveplayeronmap(*MainCharacter);
+
+        if (MainCharacter->IsAlive()) {
+            showmap();
+        }
+        else {
+            break;
+        }
+    }
+
+    std::cout << "Total Orcs Defeated: " << monsters_defeated << '\n';
+    char c = getchar();
+    return EXIT_SUCCESS;
 }
-

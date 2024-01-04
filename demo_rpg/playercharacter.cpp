@@ -49,6 +49,11 @@ void PlayerCharacter::cleanup_backpack() noexcept {
   );
   std::for_each(to_remove, _backpack.end(), [](Item*& i) { ItemManager::DeleteItem(i); });
   _backpack.erase(to_remove, _backpack.end());
+
+  const auto to_remove_ref = std::stable_partition(_backpack.begin(), _backpack.end(),
+      [](const Item* i) -> bool { return !i->GetMarkedAsBackpackRefGone(); }
+  );
+  _backpack.erase(to_remove_ref, _backpack.end());
 }
 
 PlayerCharacter::PlayerCharacter(PlayerCharacterDelegate* pc) : _player_class(pc) {
@@ -250,7 +255,7 @@ const damagetype PlayerCharacter::MeleeAttack() const noexcept {
   
   // add 1/4 of str as bonus melee damage
   tmp_damage_done += damagetype(GetTotalStrength() / 4.f);
-
+  if (tmp_damage_done < 1) tmp_damage_done = 1;
   return tmp_damage_done;
 }
 
@@ -263,7 +268,7 @@ const damagetype PlayerCharacter::RangedAttack() const noexcept {
     tmp_damage_done = Random::NTK(equipped_weapon->MinDamage, equipped_weapon->MaxDamage);
     tmp_damage_done += damagetype(GetTotalAgility() / 4.f);  // add 1/4 of agi as bonus ranged damage
   }
-
+  if (tmp_damage_done < 1) tmp_damage_done = 1;
   return tmp_damage_done;
 }
 
