@@ -151,7 +151,7 @@
     <ClCompile Include="monster.cpp" />
     <ClCompile Include="random.cpp" />
     <ClCompile Include="wizard.cpp" />
-    <ClCompile Include="warrior.cpp" />
+    <ClCompile Include="knight.cpp" />
     <ClCompile Include="rogue.cpp" />
     <ClCompile Include="weapon.cpp" />
     <ClCompile Include="potion.cpp" />
@@ -171,7 +171,7 @@
     <ClInclude Include="include\demo_rpg\playableclasses_fwd.h" />
     <ClInclude Include="include\demo_rpg\random.h" />
     <ClInclude Include="include\demo_rpg\rogue.h" />
-    <ClInclude Include="include\demo_rpg\warrior.h" />
+    <ClInclude Include="include\demo_rpg\knight.h" />
     <ClInclude Include="include\demo_rpg\wizard.h" />
     <ClInclude Include="include\demo_rpg\item.h" />
     <ClInclude Include="include\demo_rpg\item_manager.h" />

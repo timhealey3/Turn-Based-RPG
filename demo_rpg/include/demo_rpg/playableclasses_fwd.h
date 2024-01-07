@@ -1,5 +1,5 @@
 #pragma once
 #include "cleric.h"
 #include "rogue.h"
-#include "warrior.h"
+#include "knight.h"
 #include "wizard.h"

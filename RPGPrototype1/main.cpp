@@ -12,18 +12,18 @@ void display_character_sheet() {
     system("CLS");
     std::cout
         << "Your Character\n"
-        << "-----------------\n"
+        << "L: " << MainCharacter->us.GetLevel() << " XP: " << MainCharacter->us.GetCurrentEXP() << " NEXT: " << MainCharacter->us.GetEXPToNextLevel() << '\n'
         << "Hit Points: " << MainCharacter->us.GetCurrentHP() << "/" << MainCharacter->us.GetMaxHP() << '\n'
         << "Armor: " << MainCharacter->us.GetTotalArmor() << "  Resistance: " << MainCharacter->us.GetTotalElementRes() << '\n'
         << "STR: " << MainCharacter->us.GetTotalStrength() << " AGI: " << MainCharacter->us.GetTotalAgility() << " INT: " << MainCharacter->us.GetTotalIntellect() << '\n'
         << "\n\nEquipped Gear\n";
     if (MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)) {
         std::string weapon_name = MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->Name;
-        std::cout << "MELEE: " << weapon_name << "d(" << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->MinDamage << '-' << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->MaxDamage << ")\n";
+        std::cout << "MELEE: " << weapon_name << "  damage(" << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->MinDamage << '-' << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->MaxDamage << ")\n";
     }
     if (MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)) {
         std::string weapon_name = MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)->Name;
-        std::cout << "RANGED: " << weapon_name << "d(" << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)->MinDamage << '-' << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)->MaxDamage << ")\n";
+        std::cout << "RANGED: " << weapon_name << "  damage(" << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)->MinDamage << '-' << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::RANGED)->MaxDamage << ")\n";
     }
     if (MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::HEAD)) {
         std::string armor_name = MainCharacter->us.GetEquippedArmorAt((unsigned long long)ARMORSLOT::HEAD)->Name;
@@ -67,21 +67,29 @@ void open_inventory() {
     bool done = false;
     int selected_item_num = 0;
     while (!done) {
-        // clear screen
         system("CLS");
         auto list_of_items = MainCharacter->us.GetBackpackList();
-        std::cout << "CURRENT INVENTORY \n" << "-------------------\n\n";
+        std::cout
+            << "CURRENT INVENTORY\n"
+            << "-----------------\n\n";
         int items_in_backpack_count = 0;
         for (const auto& item : list_of_items) {
             if (selected_item_num == items_in_backpack_count)
-                std::cout << " > ";
+                std::cout << "> ";
             else
-                std::cout << " ";
-            std::cout << item->GetData()->Name << "\n";
+                std::cout << "  ";
+            std::cout << item->GetData()->Name << '\n';
+            if (ItemManager::IsItemPotion(item)) {
+                Potion* potion = nullptr;
+                ItemManager::CastItemToPotion(item, potion);
+                if (potion)
+                    std::cout << "    Quantity: " << potion->Quantity << '\n';
+            }
             items_in_backpack_count++;
         }
+
         std::cin.ignore(100, '\n');
-        std::cout << "\n d = done w = up s = down u = equip/use\n";
+        std::cout << "\n d = done, w = up, s = down, u = use/equip current\n";
         char c = getchar();
         switch (c) {
         case 'd':
@@ -89,42 +97,188 @@ void open_inventory() {
             break;
         case 'w':
             selected_item_num--;
-            if (selected_item_num < 0) selected_item_num = 0;
+            if (selected_item_num < 0)
+                selected_item_num = 0;
             break;
         case 's':
             selected_item_num++;
-            if (selected_item_num > list_of_items.size() - 1) selected_item_num = list_of_items.size() - 1;
+            if (selected_item_num > list_of_items.size() - 1)
+                selected_item_num = (int)list_of_items.size() - 1;
             break;
         case 'u':
             if (list_of_items.empty())
                 continue;
             if (ItemManager::IsItemPotion(list_of_items[selected_item_num]))
-                ItemManager::Use(list_of_items[selected_item_num], &MainCharacter->us);
+                ItemManager::Use(list_of_items[selected_item_num], &(MainCharacter->us));
             else
-                ItemManager::Equip(list_of_items[selected_item_num], &MainCharacter->us);
+                ItemManager::Equip(list_of_items[selected_item_num], &(MainCharacter->us));
             break;
         default:
             break;
         }
     }
+
 }
 
-Item* drop_random_item(){
-    // 8 pieces of armor, 2 weapon types, healing potion
-    int drop_seed = Random::NTK(1, 100);
+bool combat_inventory() {
+    bool done = false;
+    bool action_used = false;
+    int selected_item_num = 0;
+    while (!done) {
+        system("CLS");
+        auto list_of_items = MainCharacter->us.GetBackpackList();
+        std::cout
+            << "CURRENT INVENTORY\n"
+            << "-----------------\n\n";
+        int items_in_backpack_count = 0;
+        for (const auto& item : list_of_items) {
+            if (selected_item_num == items_in_backpack_count)
+                std::cout << "> ";
+            else
+                std::cout << "  ";
+            std::cout << item->GetData()->Name << '\n';
+            if (ItemManager::IsItemPotion(item)) {
+                Potion* potion = nullptr;
+                ItemManager::CastItemToPotion(item, potion);
+                if (potion)
+                    std::cout << "    Quantity: " << potion->Quantity << '\n';
+            }
+            items_in_backpack_count++;
+        }
 
+        std::cin.ignore(100, '\n');
+        std::cout << "\n d = done, w = up, s = down, u = use/equip current\n";
+        char c = getchar();
+        switch (c) {
+        case 'd':
+            done = true;
+            break;
+        case 'w':
+            selected_item_num--;
+            if (selected_item_num < 0)
+                selected_item_num = 0;
+            break;
+        case 's':
+            selected_item_num++;
+            if (selected_item_num > list_of_items.size() - 1)
+                selected_item_num = (int)list_of_items.size() - 1;
+            break;
+        case 'u':
+            if (list_of_items.empty())
+                continue;
+            if (ItemManager::IsItemPotion(list_of_items[selected_item_num])) {
+                action_used = ItemManager::Use(list_of_items[selected_item_num], &(MainCharacter->us));
+            }
+            else {
+                action_used = ItemManager::Equip(list_of_items[selected_item_num], &(MainCharacter->us));
+            }
+            break;
+        default:
+            break;
+        }
+        if (action_used)
+            break;
+    }
+    return action_used;
+}
+
+bool combat_ability_selection() {
+    bool ability_done = false;
+    bool action_used = false;
+    int selected_ability = 0;
+    while (!ability_done) {
+        auto current_abilities = MainCharacter->us.GetAbilityList();
+        system("CLS");
+        std::cout
+            << "CURRENT ABILITIES\n\n";
+        int abilites_in_list_count = 0;
+        for (const auto& abil : current_abilities) {
+            std::cout << ((selected_ability == abilites_in_list_count) ? "> " : "  ");
+            std::cout << abil->GetName() << '\n';
+            //todo: cooldowns and mp
+            abilites_in_list_count++;
+        }
+
+        std::cin.ignore(100, '\n');
+        std::cout << "\n d = done, w = up, s = down, u = use\n";
+        char c = getchar();
+        switch (c) {
+        case 'd':
+            ability_done = true;
+            break;
+        case 'w':
+            selected_ability--;
+            if (selected_ability < 0)
+                selected_ability = 0;
+            break;
+        case 's':
+            selected_ability++;
+            if (selected_ability > current_abilities.size() - 1)
+                selected_ability = (int)current_abilities.size() - 1;
+            break;
+        case 'u':
+            if (current_abilities[selected_ability]->GetTarget() == ABILITYTARGET::ENEMY) {
+                int total_damage = 0;
+                total_damage += current_abilities[selected_ability]->GetHPEffect();
+                switch (current_abilities[selected_ability]->GetScaler()) {
+                case ABILITYSCALER::STR:
+                    total_damage += (int)(MainCharacter->us.GetTotalStrength() / 2.f);
+                    break;
+                case ABILITYSCALER::INT:
+                    total_damage += (int)(MainCharacter->us.GetTotalIntellect() / 2.f);
+                    break;
+                case ABILITYSCALER::AGI:
+                    total_damage += (int)(MainCharacter->us.GetTotalAgility() / 2.f);
+                    break;
+                default:
+                    break;
+                }
+                CurrentMonster->monster.HP.ReduceCurrent(total_damage);
+            }
+            else {  // itsa heal (probably)
+                int total_heal = 0;
+                total_heal += current_abilities[selected_ability]->GetHPEffect();
+                switch (current_abilities[selected_ability]->GetScaler()) {
+                case ABILITYSCALER::STR:
+                    total_heal += (int)(MainCharacter->us.GetTotalStrength() / 2.f);
+                    break;
+                case ABILITYSCALER::INT:
+                    total_heal += (int)(MainCharacter->us.GetTotalIntellect() / 2.f);
+                    break;
+                case ABILITYSCALER::AGI:
+                    total_heal += (int)(MainCharacter->us.GetTotalAgility() / 2.f);
+                    break;
+                default:
+                    break;
+                }
+                MainCharacter->us.Heal(total_heal);
+            }
+            action_used = true;
+            break;
+        default:
+            break;
+        }
+        if (action_used)
+            break;
+    }
+    return action_used;
+}
+
+Item* drop_random_item() {
+    // 8 armor items, 2 weapon types, 1 potion : 11 different drop types
+    int drop_seed = Random::NTK(1, 100);
     if (drop_seed < 6) {
         std::string name;
         CoreStats local_stats;
         int magical_power = Random::NTK(0, 2);
         switch (magical_power) {
-        case 0: name = "Leather Helmet";
+        case 0: name = "Helmet";
             local_stats = CoreStats(0, 0, 0, 1, 0);
             break;
-        case 1: name = "Iron Helmet";
+        case 1: name = "+1 Helmet";
             local_stats = CoreStats(1, 1, 1, 2, 1);
             break;
-        case 2: name = "Magical Iron Helmet";
+        case 2: name = "+2 Helmet";
             local_stats = CoreStats(2, 2, 2, 3, 2);
             break;
         default:
@@ -139,10 +293,10 @@ Item* drop_random_item(){
         return ItemManager::CreateArmor("Leg Guards", CoreStats(0, 0, 0, 1, 0), ARMORSLOT::LEGS);
     }
     else if (drop_seed < 24) {
-        return ItemManager::CreateArmor("Gloves", CoreStats(0, 0, 0, 1, 0), ARMORSLOT::HANDS);
+        return ItemManager::CreateArmor("Boots", CoreStats(0, 0, 0, 1, 0), ARMORSLOT::FEET);
     }
     else if (drop_seed < 30) {
-        return ItemManager::CreateArmor("Boots", CoreStats(0, 0, 0, 1, 0), ARMORSLOT::FEET);
+        return ItemManager::CreateArmor("Gloves", CoreStats(0, 0, 0, 1, 0), ARMORSLOT::HANDS);
     }
     else if (drop_seed < 36) {
         return ItemManager::CreateArmor("Ring1", CoreStats(1, 1, 1, 0, 0), ARMORSLOT::RING1);
@@ -151,7 +305,7 @@ Item* drop_random_item(){
         return ItemManager::CreateArmor("Ring2", CoreStats(1, 1, 1, 0, 0), ARMORSLOT::RING2);
     }
     else if (drop_seed < 48) {
-        return ItemManager::CreateArmor("Neck Guard", CoreStats(0, 0, 0, 1, 1), ARMORSLOT::NECK);
+        return ItemManager::CreateArmor("Neck Gaurd", CoreStats(0, 0, 0, 1, 1), ARMORSLOT::NECK);
     }
     else if (drop_seed < 54) {
         return ItemManager::CreateWeapon("1H Sword", CoreStats(0, 0, 0, 0, 0), WEAPONSLOT::MELEE, 2, 3);
@@ -160,8 +314,7 @@ Item* drop_random_item(){
         return ItemManager::CreateWeapon("Bow", CoreStats(0, 0, 0, 0, 0), WEAPONSLOT::RANGED, 2, 3);
     }
     else if (drop_seed < 91) {
-        // can more than one quantity of potions
-        return ItemManager::CreatePotion("Potion of Health", Random::NTK(2, 5), Random::NTK(1,2));
+        return ItemManager::CreatePotion("Potion Of Healing", Random::NTK(2, 5), Random::NTK(1, 2));
     }
     return nullptr;
 }
@@ -197,49 +350,71 @@ void create_monster(Fightable* in_out, const Player* base_calc) {
     CurrentMonster = in_out;
 }
 
-void enterfightsequence(Player& player1) {
+void fight_sequence(Player& player1) {
     if (!CurrentMonster) {
         return;
     }
+    // options available per turn
+    enum class FightOptions { NONE, ATTACK, INVENTORY, ABILITY };
     while (player1.IsAlive() && CurrentMonster->IsAlive()) {
-        system("CLS");
-        // display fight interface
-        std::cout
-            << "  \n"
-            << "Player         vs       Orc\n"
-            << "hp: " << player1.us.GetCurrentHP() << '/' << player1.us.GetMaxHP() << "                  hp: " << CurrentMonster->monster.HP.GetCurrent() << '/' << CurrentMonster->monster.HP.GetMax() << '\n'
-            << "action(a:attack): ";
-        char action = '1';
-        while (action != 'a') {
+        FightOptions action_taken = FightOptions::NONE;
+        char action = '\0';
+        while (action_taken == FightOptions::NONE) {
+            // display fight interface
+            system("CLS");
+            std::cout
+                << "Player         vs       Monster\n"
+                << "hp: " << player1.us.GetCurrentHP() << '/' << player1.us.GetMaxHP() << "                  hp: " << CurrentMonster->monster.HP.GetCurrent() << '/' << CurrentMonster->monster.HP.GetMax() << '\n'
+                << "action(a:attack,i:inv,b:abilites): ";
             action = getchar();
+            switch (action) {
+            case 'a':
+                action_taken = FightOptions::ATTACK;
+                CurrentMonster->monster.HP.ReduceCurrent(player1.us.MeleeAttack());
+                break;
+            case 'i':
+                action_taken = (combat_inventory()) ? FightOptions::INVENTORY : FightOptions::NONE;
+                break;
+            case 'b':
+                action_taken = (combat_ability_selection()) ? FightOptions::ABILITY : FightOptions::NONE;
+                break;
+            default:
+                break;
+            }
         }
-        CurrentMonster->monster.HP.ReduceCurrent(player1.us.MeleeAttack());
 
+        // monster hits when your turn is over
         if (CurrentMonster->IsAlive()) {
+            // monster attack every turn
             int damage_we_take = CurrentMonster->monster.Attack();
             damage_we_take -= player1.us.GetTotalArmor();
             if (damage_we_take < 1)
                 damage_we_take = 1;
-            player1.us.TakeDamage(CurrentMonster->monster.Attack());
+            player1.us.TakeDamage(damage_we_take);
         }
+
     }
 
     if (player1.IsAlive()) {
-        // drop random item
-        Item* item_drop = drop_random_item();
+        std::cout << "You Won vs the Monster!\n";
+
+        // gain xp
         player1.us.GainEXP(CurrentMonster->xpworth);
-        // create next monster
-        monsters_defeated++;
-        create_monster(CurrentMonster, &player1);
-        std::cout << "You defeated the Orc!\n";
+        std::cout << "xp gained: " << CurrentMonster->xpworth << '\n';
+
+        // drop a random item
+        Item* item_drop = drop_random_item();
         if (item_drop) {
             ItemManager::MoveToBackpack(item_drop, &player1.us);
-            std::cout << "item received " << item_drop->GetData()->Name << '\n';
+            std::cout << "item recieved: " << item_drop->GetData()->Name << '\n';
         }
-        std::cout << "xp gained: " << CurrentMonster->xpworth << '\n';
+
+        // note monsters defeated count and prepare the next one
+        monsters_defeated++;
+        create_monster(CurrentMonster, &player1);
     }
     else {
-        std::cout << "You were slain by the Orc!\n";
+        std::cout << "You were defeated by the Monster!\n";
     }
 
     std::cin.ignore(100, '\n');
@@ -254,7 +429,7 @@ void moveplayeronmap(Player& player1) {
         return;
 
     if (the_map[player1.xpos][player1.ypos] == 'M') {
-        enterfightsequence(player1);
+        fight_sequence(player1);
     }
 
     // check that the player hasn't moved into a wall
@@ -287,7 +462,7 @@ void showmap() {
 int main(int argc, char** argv) {
 
     std::cout << "Choose a class: \n"
-        << "1 = Cleric    2 = Warrior\n"
+        << "1 = Cleric    2 = Knight\n"
         << "3 = Rogue     4 = Wizard\n";
     int choice = 0;
     while (choice == 0) {
@@ -305,7 +480,7 @@ int main(int argc, char** argv) {
     break;
     case 2:
     {
-        MainCharacter = new Player(new Warrior());
+        MainCharacter = new Player(new Knight());
     }
     break;
     case 3:
@@ -322,6 +497,9 @@ int main(int argc, char** argv) {
         return -12;  // failed to make player character
     }
 
+    ItemManager::MoveToBackpack(drop_random_item(), &MainCharacter->us);
+    ItemManager::MoveToBackpack(drop_random_item(), &MainCharacter->us);
+
     create_monster(CurrentMonster, MainCharacter);
 
     the_map[MainCharacter->xpos][MainCharacter->ypos] = 'P';
@@ -330,7 +508,7 @@ int main(int argc, char** argv) {
     showmap();
 
     for (;;) {
-        std::cout << "\nmove(wasd): inventory (i): stats (t): ";
+        std::cout << "\nmove(wasd), inv(i), charsheet(c): ";
         char c = getchar();
 
         switch (c) {
@@ -349,7 +527,7 @@ int main(int argc, char** argv) {
         case 'i':
             open_inventory();
             break;
-        case 't':
+        case 'c':
             display_character_sheet();
             break;
         default:
@@ -368,7 +546,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::cout << "Total Orcs Defeated: " << monsters_defeated << '\n';
+    std::cout << "Total Monsters Defeated: " << monsters_defeated << '\n';
     char c = getchar();
     return EXIT_SUCCESS;
 }
