@@ -51,7 +51,7 @@
     <ClCompile Include="weapon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cleric.cpp">
+    <ClCompile Include="druid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="rogue.cpp">
@@ -107,7 +107,7 @@
     <ClInclude Include="include\demo_rpg\weapon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\demo_rpg\cleric.h">
+    <ClInclude Include="include\demo_rpg\druid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pc_macros.h">

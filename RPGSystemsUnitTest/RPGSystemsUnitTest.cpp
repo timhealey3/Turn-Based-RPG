@@ -284,18 +284,18 @@ public:
         ItemManager::DeleteItem(random_potion);
         Assert::IsNull(random_potion);
     }
-    TEST_METHOD(Player_Cleric) {
-        PlayerCharacter p1(new Cleric());
-        Assert::AreEqual((int)Cleric::BASEHP, (int)p1.GetMaxHP());
-        Assert::AreEqual((int)Cleric::BASEMP, (int)p1.GetMaxMP());
+    TEST_METHOD(Player_Druid) {
+        PlayerCharacter p1(new Druid());
+        Assert::AreEqual((int)Druid::BASEHP, (int)p1.GetMaxHP());
+        Assert::AreEqual((int)Druid::BASEMP, (int)p1.GetMaxMP());
         Assert::AreEqual(std::string("Heal"), p1.GetAbilityList().front()->GetName());
 
         p1.GainEXP(100u);
         // level 2
         Assert::AreEqual(2, (int)p1.GetLevel());
         Assert::AreEqual(std::string("Smite"), p1.GetAbilityList()[1]->GetName());
-        Assert::AreEqual((int)(Cleric::BASEHP + (Cleric::BASEHP / 2.f)), (int)p1.GetMaxHP());
-        Assert::AreEqual((int)(Cleric::BASEMP + (Cleric::BASEMP / 2.f)), (int)p1.GetMaxMP());
+        Assert::AreEqual((int)(Druid::BASEHP + (Druid::BASEHP / 2.f)), (int)p1.GetMaxHP());
+        Assert::AreEqual((int)(Druid::BASEMP + (Druid::BASEMP / 2.f)), (int)p1.GetMaxMP());
     }
     TEST_METHOD(Player_Rogue) {
         PlayerCharacter p1(new Rogue());

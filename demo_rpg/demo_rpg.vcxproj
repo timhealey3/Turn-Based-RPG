@@ -147,7 +147,7 @@
     <ClCompile Include="buff.cpp" />
     <ClCompile Include="corestats.cpp" />
     <ClCompile Include="armor.cpp" />
-    <ClCompile Include="cleric.cpp" />
+    <ClCompile Include="druid.cpp" />
     <ClCompile Include="monster.cpp" />
     <ClCompile Include="random.cpp" />
     <ClCompile Include="wizard.cpp" />
@@ -166,7 +166,7 @@
     <ClInclude Include="include\demo_rpg\ability.h" />
     <ClInclude Include="include\demo_rpg\armor.h" />
     <ClInclude Include="include\demo_rpg\buff.h" />
-    <ClInclude Include="include\demo_rpg\cleric.h" />
+    <ClInclude Include="include\demo_rpg\druid.h" />
     <ClInclude Include="include\demo_rpg\corestats.h" />
     <ClInclude Include="include\demo_rpg\playableclasses_fwd.h" />
     <ClInclude Include="include\demo_rpg\random.h" />

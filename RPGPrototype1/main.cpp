@@ -3,17 +3,21 @@
 #include "demo_rpg/item.h"
 #include "demo_rpg/item_manager.h"
 #include <iostream>
+#include <windows.h>
+#include <chrono>
+#include <conio.h>
+#include <thread>
 
 Player* MainCharacter = nullptr;
 Fightable* CurrentMonster = nullptr;
 int monsters_defeated = 0;
 
 void display_character_sheet() {
-    system("CLS");
+    system("CLS"); // clear screen in console
     std::cout
         << "Your Character\n"
         << "L: " << MainCharacter->us.GetLevel() << " XP: " << MainCharacter->us.GetCurrentEXP() << " NEXT: " << MainCharacter->us.GetEXPToNextLevel() << '\n'
-        << "Hit Points: " << MainCharacter->us.GetCurrentHP() << "/" << MainCharacter->us.GetMaxHP() << '\n'
+        << "Health: " << MainCharacter->us.GetCurrentHP() << "/" << MainCharacter->us.GetMaxHP() << '\n'
         << "Armor: " << MainCharacter->us.GetTotalArmor() << "  Resistance: " << MainCharacter->us.GetTotalElementRes() << '\n'
         << "STR: " << MainCharacter->us.GetTotalStrength() << " AGI: " << MainCharacter->us.GetTotalAgility() << " INT: " << MainCharacter->us.GetTotalIntellect() << '\n'
         << "\n\nEquipped Gear\n";
@@ -457,12 +461,13 @@ void showmap() {
         }
         std::cout << '\n';
     }
+    std::cout << "Health: " << MainCharacter->us.GetCurrentHP() << "/" << MainCharacter->us.GetMaxHP();
 }
 
 int main(int argc, char** argv) {
 
     std::cout << "Choose a class: \n"
-        << "1 = Cleric    2 = Knight\n"
+        << "1 = Druid    2 = Knight\n"
         << "3 = Rogue     4 = Wizard\n";
     int choice = 0;
     while (choice == 0) {
@@ -475,7 +480,7 @@ int main(int argc, char** argv) {
     switch (choice) {
     case 1:
     {
-        MainCharacter = new Player(new Cleric());
+        MainCharacter = new Player(new Druid());
     }
     break;
     case 2:
@@ -508,30 +513,31 @@ int main(int argc, char** argv) {
     showmap();
 
     for (;;) {
-        std::cout << "\nmove(wasd), inv(i), charsheet(c): ";
-        char c = getchar();
-
-        switch (c) {
-        case 'w':
-            MainCharacter->xpos--;
-            break;
-        case 's':
-            MainCharacter->xpos++;
-            break;
-        case 'a':
-            MainCharacter->ypos--;
-            break;
-        case 'd':
-            MainCharacter->ypos++;
-            break;
-        case 'i':
-            open_inventory();
-            break;
-        case 'c':
-            display_character_sheet();
-            break;
-        default:
-            break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Sleep for 100 milliseconds
+        if (_kbhit()) { // true when key is input
+            char c = _getch(); // single char
+            switch (c) {
+            case 'w':
+                MainCharacter->xpos--;
+                break;
+            case 's':
+                MainCharacter->xpos++;
+                break;
+            case 'a':
+                MainCharacter->ypos--;
+                break;
+            case 'd':
+                MainCharacter->ypos++;
+                break;
+            case 'i':
+                open_inventory();
+                break;
+            case 'c':
+                display_character_sheet();
+                break;
+            default:
+                break;
+            }
         }
 
         std::cin.clear();
@@ -540,6 +546,7 @@ int main(int argc, char** argv) {
 
         if (MainCharacter->IsAlive()) {
             showmap();
+            std::cout << "\nmove(wasd)    |   inventory(i)    |   charsheet(c)";
         }
         else {
             break;
