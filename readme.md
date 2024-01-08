@@ -3,9 +3,9 @@
 ## Game Loop
 
 - Turn Based Battles
-- Turn Based Movement
 - Different Spells and Attacks
 
 ## Designs Ideas
 
-Use C++ OOP to create a RPG game
+- Game functions in the console
+- Use C++ OOP to create a RPG game
