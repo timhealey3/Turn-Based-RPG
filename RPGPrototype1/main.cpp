@@ -3,6 +3,7 @@
 #include "demo_rpg/item.h"
 #include "demo_rpg/item_manager.h"
 #include <iostream>
+#include <string>
 #include <windows.h>
 #include <chrono>
 #include <conio.h>
@@ -16,11 +17,12 @@ void display_character_sheet() {
     system("CLS"); // clear screen in console
     std::cout
         << "Your Character\n"
-        << "L: " << MainCharacter->us.GetLevel() << " XP: " << MainCharacter->us.GetCurrentEXP() << " NEXT: " << MainCharacter->us.GetEXPToNextLevel() << '\n'
+        << "Level: " << MainCharacter->us.GetLevel() << " XP: " << MainCharacter->us.GetCurrentEXP() << " Next: " << MainCharacter->us.GetEXPToNextLevel() << '\n'
         << "Health: " << MainCharacter->us.GetCurrentHP() << "/" << MainCharacter->us.GetMaxHP() << '\n'
         << "Armor: " << MainCharacter->us.GetTotalArmor() << "  Resistance: " << MainCharacter->us.GetTotalElementRes() << '\n'
         << "STR: " << MainCharacter->us.GetTotalStrength() << " AGI: " << MainCharacter->us.GetTotalAgility() << " INT: " << MainCharacter->us.GetTotalIntellect() << '\n'
         << "\n\nEquipped Gear\n";
+    // print out inventory
     if (MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)) {
         std::string weapon_name = MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->Name;
         std::cout << "MELEE: " << weapon_name << "  damage(" << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->MinDamage << '-' << MainCharacter->us.GetEquippedWeaponAt((unsigned long long)WEAPONSLOT::MELEE)->MaxDamage << ")\n";
@@ -87,7 +89,7 @@ void open_inventory() {
                 Potion* potion = nullptr;
                 ItemManager::CastItemToPotion(item, potion);
                 if (potion)
-                    std::cout << "    Quantity: " << potion->Quantity << '\n';
+                    std::cout << "    HP: " << potion->HealAmount << '\n';
             }
             items_in_backpack_count++;
         }
@@ -145,7 +147,7 @@ bool combat_inventory() {
                 Potion* potion = nullptr;
                 ItemManager::CastItemToPotion(item, potion);
                 if (potion)
-                    std::cout << "    Quantity: " << potion->Quantity << '\n';
+                    std::cout << "    HP: " << potion->HealAmount << '\n';
             }
             items_in_backpack_count++;
         }
@@ -344,7 +346,7 @@ void create_monster(Fightable* in_out, const Player* base_calc) {
     in_out->xpos = Random::NTK(1, 11);
     in_out->ypos = Random::NTK(1, 11);
 
-    while (the_map[in_out->xpos][in_out->ypos] == 'P' || the_map[in_out->xpos][in_out->ypos] == 'x') {
+    while (the_map[in_out->xpos][in_out->ypos] == '@' || the_map[in_out->xpos][in_out->ypos] == '#') {
         in_out->xpos = Random::NTK(1, 11);
         in_out->ypos = Random::NTK(1, 11);
     }
@@ -437,9 +439,9 @@ void moveplayeronmap(Player& player1) {
     }
 
     // check that the player hasn't moved into a wall
-    if (the_map[player1.xpos][player1.ypos] != 'x') {
+    if (the_map[player1.xpos][player1.ypos] != '#') {
         // draw the charater at new location
-        the_map[player1.xpos][player1.ypos] = 'P';
+        the_map[player1.xpos][player1.ypos] = '@';
         // make old location a black area
         the_map[player1.prev_xpos][player1.prev_ypos] = ' ';
         // update current location to be previous before next update
@@ -503,17 +505,16 @@ int main(int argc, char** argv) {
     }
 
     ItemManager::MoveToBackpack(drop_random_item(), &MainCharacter->us);
-    ItemManager::MoveToBackpack(drop_random_item(), &MainCharacter->us);
 
     create_monster(CurrentMonster, MainCharacter);
 
-    the_map[MainCharacter->xpos][MainCharacter->ypos] = 'P';
+    the_map[MainCharacter->xpos][MainCharacter->ypos] = '@';
     the_map[CurrentMonster->xpos][CurrentMonster->ypos] = 'M';
 
     showmap();
 
     for (;;) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Sleep for 100 milliseconds
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Sleep for 50 milliseconds
         if (_kbhit()) { // true when key is input
             char c = _getch(); // single char
             switch (c) {

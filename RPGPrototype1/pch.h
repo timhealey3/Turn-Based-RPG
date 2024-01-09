@@ -4,18 +4,18 @@
 #include "demo_rpg/monster.h"
 
 char the_map[12][13] =
-{ "xxxxxxxxxxxx",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "x          x",
-  "xxxxxxxxxxxx" };
+{ "############",
+  "#          #",
+  "#          #",
+  "#          #",
+  "#          #",
+  "#          #",
+  "#          #",
+  "#          #",
+  "#          #",
+  "#          #",
+  "#          #",
+  "############" };
 
 
 struct Player {
