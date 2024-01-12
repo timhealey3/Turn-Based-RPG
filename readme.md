@@ -3,7 +3,13 @@
 ## Game Loop
 
 - Turn Based Battles
-- Different Spells and Attacks
+- Randomly generated maps
+- multiple classes
+  - each with own unique spells and abilities
+- items
+  - armor
+  - weapons
+  - potions 
 
 ## Designs Ideas
 
